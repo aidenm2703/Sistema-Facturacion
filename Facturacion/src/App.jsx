@@ -8,32 +8,7 @@ import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
 import Toaster from './components/Toaster'
 import { getBusinessType } from './data/businessTypes'
-
-const USERS_KEY = 'aiden-users'
-const SESSION_KEY = 'aiden-session'
-const SETTINGS_KEY = 'aiden-settings'
-const INVENTORY_KEY = 'aiden-inventario'
-const INVOICES_KEY = 'aiden-invoices'
-const RESERVATIONS_KEY = 'aiden-reservations'
-
-function loadUsers() {
-  try {
-    const raw = localStorage.getItem(USERS_KEY)
-    const arr = raw ? JSON.parse(raw) : []
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
-
-function loadSettings() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch {
-    return {}
-  }
-}
+import { usuarioService } from './services/usuarioService'
 
 function AppRoot({ children }) {
   return (
@@ -45,42 +20,28 @@ function AppRoot({ children }) {
 }
 
 function App() {
-  const [users, setUsers] = useState(loadUsers)
-  const [settings, setSettings] = useState(loadSettings)
-  const [sessionUser, setSessionUser] = useState(() => {
-    try {
-      return sessionStorage.getItem(SESSION_KEY) || ''
-    } catch {
-      return ''
-    }
-  })
+  const [users, setUsers] = useState(() => usuarioService.obtenerTodos())
+  const [settings, setSettings] = useState(() => usuarioService.obtenerSettings())
+  const [sessionUser, setSessionUser] = useState(() => usuarioService.sesionActiva())
   const [step, setStep] = useState('welcome') // welcome | empresa | cuenta
 
   const saveUsers = (next) => {
-    setUsers(next)
-    localStorage.setItem(USERS_KEY, JSON.stringify(next))
+    const stored = usuarioService.guardarTodos(next)
+    setUsers(stored)
   }
 
   const saveSettings = (next) => {
-    setSettings(next)
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next))
+    const stored = usuarioService.guardarSettings(next)
+    setSettings(stored)
   }
 
   const doLogin = (user) => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, user.username)
-    } catch {
-      /* ignore */
-    }
+    usuarioService.iniciarSesion(user.username)
     setSessionUser(user.username)
   }
 
   const doLogout = () => {
-    try {
-      sessionStorage.removeItem(SESSION_KEY)
-    } catch {
-      /* ignore */
-    }
+    usuarioService.cerrarSesion()
     setSessionUser('')
   }
 
@@ -129,16 +90,12 @@ return (
             setSettings({})
             setSessionUser('')
             setStep('welcome')
-            try {
-              sessionStorage.removeItem(SESSION_KEY)
-            } catch {
-              /* ignore */
-            }
-            localStorage.removeItem(USERS_KEY)
-            localStorage.removeItem(INVENTORY_KEY)
-            localStorage.removeItem(SETTINGS_KEY)
-            localStorage.removeItem(INVOICES_KEY)
-            localStorage.removeItem(RESERVATIONS_KEY)
+            usuarioService.cerrarSesion()
+            localStorage.removeItem('aiden-users')
+            localStorage.removeItem('aiden-inventario')
+            localStorage.removeItem('aiden-settings')
+            localStorage.removeItem('aiden-invoices')
+            localStorage.removeItem('aiden-reservations')
           }}
         />
       </AppRoot>

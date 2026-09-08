@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import Icon from './Icon'
 import { toast } from '../utils/toast'
 import { exportarRespaldo, importarRespaldo } from '../utils/backup'
+import { usuarioService } from '../services/usuarioService'
 
 const PERMS = [
   { key: 'facturar', label: 'Facturar y ver facturas' },
@@ -58,7 +59,8 @@ function UsersManager({ users, saveUsers, currentUser }) {
     if (confirming === username) {
       setConfirming(null)
       clearTimeout(confirmTimer.current)
-      saveUsers(users.filter((u) => u.username !== username))
+      usuarioService.eliminar(username)
+      saveUsers(usuarioService.obtenerTodos())
       return
     }
     setConfirming(username)
@@ -75,7 +77,7 @@ function UsersManager({ users, saveUsers, currentUser }) {
     if (!form.nombre.trim()) errs.nombre = 'Indica el nombre del empleado'
     if (form.username.trim().length < 3) errs.username = 'Usuario de al menos 3 caracteres'
     if (form.password.length < 6) errs.password = 'Contraseña de al menos 6 caracteres'
-    if (users.some((u) => u.username.toLowerCase() === form.username.trim().toLowerCase()))
+    if (usuarioService.existe(form.username.trim()))
       errs.username = 'Ese usuario ya existe'
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
@@ -87,23 +89,19 @@ function UsersManager({ users, saveUsers, currentUser }) {
       role: 'empleado',
       permisos: { ...form.permisos },
     }
-    saveUsers([...users, nuevo])
-    toast.success('Empleado agregado', `${form.nombre.trim()} ya puede ingresar al sistema.`)
+    const created = usuarioService.crear(nuevo)
+    saveUsers(usuarioService.obtenerTodos())
+    toast.success('Empleado agregado', `${created.nombre} ya puede ingresar al sistema.`)
     setForm({ nombre: '', username: '', password: '', permisos: emptyPermisos() })
   }
 
   const toggleEmployeePerm = (username, key) => {
-    saveUsers(
-      users.map((u) =>
-        u.username === username
-          ? { ...u, permisos: { ...u.permisos, [key]: !u.permisos[key] } }
-          : u,
-      ),
-    )
+    usuarioService.actualizarPermiso(username, key)
+    saveUsers(usuarioService.obtenerTodos())
   }
 
   const removeUser = (username) => {
-    const target = users.find((u) => u.username === username)
+    const target = usuarioService.obtenerPorId(username)
     if (target.role === 'admin') {
       toast.danger('No es posible', 'No se puede eliminar una cuenta de administrador.')
       return

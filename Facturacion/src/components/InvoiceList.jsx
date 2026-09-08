@@ -1,8 +1,26 @@
+import { useState } from 'react'
 import { derivarEstado } from '../utils/analytics'
 import { formatColones } from '../utils/currency'
+import { facturaService } from '../services/facturaService'
 import Icon from './Icon'
 
 function InvoiceList({ invoices, onSelect, onNew }) {
+  const [buscarId, setBuscarId] = useState('')
+  const [noEncontrada, setNoEncontrada] = useState(false)
+
+  const buscarFactura = (e) => {
+    e.preventDefault()
+    const termino = buscarId.trim()
+    if (!termino) return
+    const encontrada = facturaService.buscar(termino)
+    if (encontrada) {
+      setNoEncontrada(false)
+      onSelect(encontrada)
+    } else {
+      setNoEncontrada(true)
+    }
+  }
+
   if (invoices.length === 0) {
     return (
       <div className="empty-state">
@@ -30,6 +48,25 @@ function InvoiceList({ invoices, onSelect, onNew }) {
           </button>
         )}
       </div>
+
+      <form className="inv-search" onSubmit={buscarFactura}>
+        <input
+          type="text"
+          value={buscarId}
+          onChange={(e) => {
+            setBuscarId(e.target.value)
+            setNoEncontrada(false)
+          }}
+          placeholder="Buscar por ID, número o cliente (ej.: inv-1001, FACT-001, Juan)"
+        />
+        <button type="submit" className="btn btn-ghost">
+          <Icon name="invoices" size={14} /> Buscar
+        </button>
+        {noEncontrada && (
+          <span className="error inv-search-error">No se encontró una factura con ese dato.</span>
+        )}
+      </form>
+
       <table className="list-table">
         <thead>
           <tr>
@@ -67,7 +104,11 @@ function InvoiceList({ invoices, onSelect, onNew }) {
           })}
         </tbody>
       </table>
-      <p className="list-hint">Haz clic en una factura para ver su diseño completo.</p>
+      <p className="list-hint">
+        Haz clic en una factura para ver su diseño completo. El buscador usa un índice por ID
+        (lookup directo, sin recorrer toda la lista) y también encuentra por número de factura o
+        nombre del cliente.
+      </p>
     </div>
   )
 }

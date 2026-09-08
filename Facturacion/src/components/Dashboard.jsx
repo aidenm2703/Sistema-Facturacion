@@ -15,46 +15,9 @@ import HelpScreen from './HelpScreen'
 import BusinessMark from './BusinessMark'
 import { formatColones } from '../utils/currency'
 import { toast } from '../utils/toast'
-import { guardarLocalJson } from '../utils/storage'
-
-const STORAGE_KEY = 'aiden-invoices'
-const RESERVATIONS_KEY = 'aiden-reservations'
-const INVENTORY_KEY = 'aiden-inventario'
-
-const exampleInvoice = {
-  id: 'inv-1001',
-  emisor: 'TechStore S.A.',
-  RUC: '3-101-555000',
-  direccionEmpresa: 'Galería Central, San José',
-  correoEmpresa: 'ventas@techstore.com',
-  cliente: 'Juan Pérez',
-  direccionCliente: 'Barrio Escalante, San José',
-  correoCliente: 'juan.perez@gmail.com',
-  numero: 'FACT-001',
-  fecha: new Date().toISOString().slice(0, 10),
-  impuesto: 13,
-  items: [
-    { descripcion: 'Teclado mecánico', cantidad: 2, precio: 18000 },
-    { descripcion: 'Monitor 24 pulgadas', cantidad: 1, precio: 95000 },
-    { descripcion: 'Mouse inalámbrico', cantidad: 3, precio: 12000 },
-  ],
-}
-
-function computeTotals(inv) {
-  const subtotal = (inv.items || []).reduce(
-    (acc, it) => acc + Number(it.cantidad) * Number(it.precio),
-    0,
-  )
-  const impTotal = subtotal * ((Number(inv.impuesto) || 0) / 100)
-  return { ...inv, subtotal, impTotal, total: Math.round((subtotal + impTotal) * 100) / 100 }
-}
-
-function withDefaultDue(inv) {
-  if (inv.fechaVencimiento) return inv
-  const d = new Date(inv.fecha)
-  d.setDate(d.getDate() + 30)
-  return { ...inv, fechaVencimiento: d.toISOString().slice(0, 10) }
-}
+import { facturaService } from '../services/facturaService'
+import { reservaService } from '../services/reservaService'
+import { inventarioService } from '../services/inventarioService'
 
 function buildTestDataset() {
   const hoy = new Date()
@@ -92,39 +55,23 @@ function buildTestDataset() {
       venc = dentro(15)
       pagada = false
     }
-    return withDefaultDue(
-      computeTotals({
-        id: 'inv-test-' + (i + 1),
-        emisor: 'TechStore S.A.',
-        RUC: '3-101-555000',
-        direccionEmpresa: 'Galería Central, San José',
-        correoEmpresa: 'ventas@techstore.com',
-        cliente: clientes[i],
-        direccionCliente: '',
-        correoCliente: '',
-        numero: 'TEST-' + String(i + 1).padStart(3, '0'),
-        fecha: hace(30 - i * 2),
-        fechaVencimiento: venc,
-        impuesto: 13,
-        pagada,
-        items: [{ descripcion: 'Producto TechStore', cantidad: 1, precio: total / 1.13 }],
-      }),
-    )
-  })
-}
-
-function loadInvoices() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const list = JSON.parse(raw)
-      if (Array.isArray(list) && list.length > 0)
-        return list.map((i) => withDefaultDue(computeTotals(i)))
+    return {
+      id: 'inv-test-' + (i + 1),
+      emisor: 'TechStore S.A.',
+      RUC: '3-101-555000',
+      direccionEmpresa: 'Galería Central, San José',
+      correoEmpresa: 'ventas@techstore.com',
+      cliente: clientes[i],
+      direccionCliente: '',
+      correoCliente: '',
+      numero: 'TEST-' + String(i + 1).padStart(3, '0'),
+      fecha: hace(30 - i * 2),
+      fechaVencimiento: venc,
+      impuesto: 13,
+      pagada,
+      items: [{ descripcion: 'Producto TechStore', cantidad: 1, precio: total / 1.13 }],
     }
-  } catch {
-    /* ignore */
-  }
-  return [withDefaultDue(computeTotals({ ...exampleInvoice }))]
+  })
 }
 
 function Dashboard({
@@ -136,35 +83,11 @@ function Dashboard({
   saveUsers,
   onLogout,
 }) {
-  const [invoices, setInvoices] = useState(loadInvoices)
+  const [invoices, setInvoices] = useState(() => facturaService.obtenerTodas())
   const [view, setView] = useState('home')
   const [selected, setSelected] = useState(null)
-  const [reservations, setReservations] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(RESERVATIONS_KEY) || '[]')
-    } catch {
-      return []
-    }
-  })
-  const [inventory, setInventory] = useState(() => {
-    try {
-      const raw = localStorage.getItem(INVENTORY_KEY)
-      if (raw) {
-        const map = JSON.parse(raw)
-        if (map && map[business.id]) return map
-      }
-    } catch {
-      /* ignore */
-    }
-    return {
-      [business.id]: business.items.map((it, idx) => ({
-        id: 'it-' + business.id + '-' + idx,
-        descripcion: it.descripcion,
-        precio: it.precio,
-        stock: 100,
-      })),
-    }
-  })
+  const [reservations, setReservations] = useState(() => reservaService.obtenerTodas())
+  const [inventory, setInventory] = useState(() => inventarioService.inicializar(business))
 
   const isAdmin = currentUser.role === 'admin'
   const perm = isAdmin
@@ -173,33 +96,16 @@ function Dashboard({
   const can = (k) => perm[k] === true
 
   const catalog = inventory[business.id] || business.items
-  const nextNumber = invoices.length + 1
-
-  const persistInvoices = (next) => {
-    setInvoices(next)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  }
+  const nextNumber = facturaService.siguienteNumero()
 
   const consumeStock = (itemRows) => {
-    const next = { ...inventory }
-    const arr = (next[business.id] || []).map((x) => ({ ...x }))
-    itemRows.forEach((r) => {
-      const idx = arr.findIndex(
-        (p) => p.descripcion.trim().toLowerCase() === r.descripcion.trim().toLowerCase(),
-      )
-      if (idx >= 0) {
-        arr[idx].stock = Math.max(0, Number(arr[idx].stock) - Number(r.cantidad))
-      }
-    })
-    next[business.id] = arr
+    const next = inventarioService.descontarStock(business.id, itemRows)
     setInventory(next)
-    localStorage.setItem(INVENTORY_KEY, JSON.stringify(next))
   }
 
   const saveInvoice = (data) => {
-    const inv = withDefaultDue(computeTotals({ id: 'inv-' + Date.now(), ...data }))
-    const next = [inv, ...invoices]
-    persistInvoices(next)
+    const inv = facturaService.crear(data)
+    setInvoices(facturaService.obtenerTodas())
     consumeStock(data.items)
     setSelected(inv)
     setView('detail')
@@ -207,32 +113,31 @@ function Dashboard({
   }
 
   const markPaid = (id) => {
-    persistInvoices(invoices.map((inv) => (inv.id === id ? { ...inv, pagada: true } : inv)))
+    facturaService.marcarPagada(id)
+    setInvoices(facturaService.obtenerTodas())
     toast.success('Pago registrado', 'La factura quedó marcada como pagada.')
   }
 
   const selectInvoice = (inv) => {
-    setSelected(inv)
+    setSelected(facturaService.obtenerPorId(inv.id) || inv)
     setView('detail')
   }
 
   const saveReservation = (res) => {
-    const next = [res, ...reservations]
-    setReservations(next)
-    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(next))
-    toast.success('Reserva registrada', res.cliente
-      ? `Reserva a nombre de ${res.cliente}.`
+    const created = reservaService.crear(res)
+    setReservations(reservaService.obtenerTodas())
+    toast.success('Reserva registrada', created.cliente
+      ? `Reserva a nombre de ${created.cliente}.`
       : 'La reserva se guardó correctamente.')
   }
-  const updateReservations = (res) => {
-    setReservations(res)
-    localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(res))
+  const removeReservation = (id) => {
+    reservaService.eliminar(id)
+    setReservations(reservaService.obtenerTodas())
   }
-  const removeReservation = (id) => updateReservations(reservations.filter((r) => r.id !== id))
 
   const saveCatalog = (items) => {
-    const next = { ...inventory, [business.id]: items }
-    if (!guardarLocalJson(INVENTORY_KEY, next)) {
+    const next = inventarioService.guardarCatalogo(business.id, items)
+    if (next === false) {
       toast.danger(
         'Espacio lleno',
         'No se pudieron guardar los cambios. Exporta un respaldo o reduce el tamaño de las fotos.',
@@ -243,7 +148,8 @@ function Dashboard({
   }
 
   const loadTestDataset = () => {
-    persistInvoices(buildTestDataset())
+    facturaService.seed(buildTestDataset())
+    setInvoices(facturaService.obtenerTodas())
     setView('panel')
     toast.info(
       'Datos de prueba cargados',

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { formatColones } from '../utils/currency'
 import { toast } from '../utils/toast'
 import { compressImage } from '../utils/storage'
+import { inventarioService } from '../services/inventarioService'
 import Icon from './Icon'
 import BusinessMark from './BusinessMark'
 
@@ -14,8 +15,11 @@ function Inventory({ businessName, businessId, catalog, onSaveCatalog, canEdit }
   const confirmTimer = useRef(null)
   const fileInputs = useRef({})
 
-  const setItem = (id, key, value) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [key]: value } : it)))
+  const setItem = (id, key, value) => {
+    const next = items.map((it) => (it.id === id ? { ...it, [key]: value } : it))
+    setItems(next)
+    inventarioService.actualizar(businessId, id, { [key]: value })
+  }
 
   const addItem = () => {
     const desc = newItem.descripcion.trim()
@@ -34,10 +38,8 @@ function Inventory({ businessName, businessId, catalog, onSaveCatalog, canEdit }
       return
     }
     setNewError('')
-    setItems((prev) => [
-      ...prev,
-      { id: 'it-' + Date.now(), descripcion: desc, precio, stock, imagen: null },
-    ])
+    const created = inventarioService.crear(businessId, { descripcion: desc, precio, stock, imagen: null })
+    setItems((prev) => [...prev, created])
     setNewItem({ descripcion: '', precio: '', stock: '' })
   }
 
@@ -59,6 +61,7 @@ function Inventory({ businessName, businessId, catalog, onSaveCatalog, canEdit }
     if (confirming === id) {
       setConfirming(null)
       clearTimeout(confirmTimer.current)
+      inventarioService.eliminar(businessId, id)
       setItems((prev) => prev.filter((it) => it.id !== id))
       return
     }
