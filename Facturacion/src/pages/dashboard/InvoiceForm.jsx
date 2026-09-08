@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { formatColones } from '../utils/currency'
-import BusinessMark from './BusinessMark'
+import { formatColones } from '../../utils'
+import { BusinessMark } from '../../components'
 
 function InvoiceForm({ business, businessName, nextInvoiceNumber, catalog, onSave, onCancel }) {
   const [form, setForm] = useState(() => {

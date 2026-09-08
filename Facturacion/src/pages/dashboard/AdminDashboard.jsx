@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import MetricCard from './MetricCard'
-import IngresosPeriodoChart from './IngresosPeriodoChart'
-import DistribucionClienteChart from './DistribucionClienteChart'
-import VentasPorDiaChart from './VentasPorDiaChart'
+import { MetricCard } from '../../components'
+import { IngresosPeriodoChart } from '../../components'
+import { DistribucionClienteChart } from '../../components'
+import { VentasPorDiaChart } from '../../components'
 import {
   calcularMetricas,
   detectarAtipicas,
@@ -16,8 +16,8 @@ import {
   ventasPorDiaSemana,
   mejorDiaDeVenta,
   formatMoney,
-} from '../utils/analytics'
-import Icon from './Icon'
+} from '../../utils'
+import { Icon } from '../../components'
 
 function AdminDashboard({ invoices, onViewInvoice, onLoadTestData }) {
   return (

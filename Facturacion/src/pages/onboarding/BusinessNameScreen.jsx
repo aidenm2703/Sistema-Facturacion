@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Logo from './Logo'
+import { Logo } from '../../components'
 
 function BusinessNameScreen({ onComplete }) {
   const [name, setName] = useState('')

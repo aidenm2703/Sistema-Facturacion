@@ -7,7 +7,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts'
-import { formatColones } from '../utils/currency'
+import { formatColones } from '../utils'
 
 function IngresosPeriodoChart({ data }) {
   return (

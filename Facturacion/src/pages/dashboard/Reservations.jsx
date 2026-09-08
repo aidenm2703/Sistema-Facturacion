@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { formatColones } from '../utils/currency'
-import Icon from './Icon'
+import { formatColones } from '../../utils'
+import { Icon } from '../../components'
 
 function Reservations({ businessName, businessTypeName, reservations, onAdd, onRemove, onGoCalendar }) {
   const [form, setForm] = useState(() => ({

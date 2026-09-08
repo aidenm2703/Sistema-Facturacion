@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { formatColones } from '../utils/currency'
-import Icon from './Icon'
+import { formatColones } from '../../utils'
+import { Icon } from '../../components'
 
 function CalendarView({ reservations, onRemove }) {
   const [currentDate, setCurrentDate] = useState(new Date())

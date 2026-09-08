@@ -1,5 +1,5 @@
-import Logo from './Logo'
-import Icon from './Icon'
+import { Logo } from '../../components'
+import { Icon } from '../../components'
 
 const VALUES = [
   {

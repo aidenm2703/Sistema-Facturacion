@@ -1,6 +1,6 @@
-import { businessTypes } from '../data/businessTypes'
-import Logo from './Logo'
-import BusinessMark from './BusinessMark'
+import { businessTypes } from '../../data'
+import { Logo } from '../../components'
+import { BusinessMark } from '../../components'
 
 function BusinessSelect({ userName, onComplete }) {
   return (

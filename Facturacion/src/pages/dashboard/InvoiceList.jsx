@@ -1,6 +1,6 @@
-import { derivarEstado } from '../utils/analytics'
-import { formatColones } from '../utils/currency'
-import Icon from './Icon'
+import { derivarEstado } from '../../utils'
+import { formatColones } from '../../utils'
+import { Icon } from '../../components'
 
 function InvoiceList({ invoices, onSelect, onNew }) {
   if (invoices.length === 0) {

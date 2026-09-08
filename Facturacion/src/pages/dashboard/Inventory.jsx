@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
-import { formatColones } from '../utils/currency'
-import { toast } from '../utils/toast'
-import { compressImage } from '../utils/storage'
-import Icon from './Icon'
-import BusinessMark from './BusinessMark'
+import { formatColones } from '../../utils'
+import { toast } from '../../utils'
+import { compressImage } from '../../utils'
+import { Icon } from '../../components'
+import { BusinessMark } from '../../components'
 
 function Inventory({ businessName, businessId, catalog, onSaveCatalog, canEdit }) {
   const [items, setItems] = useState(() => catalog.map((it) => ({ ...it })))

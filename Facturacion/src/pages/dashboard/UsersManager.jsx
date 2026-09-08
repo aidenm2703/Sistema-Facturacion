@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
-import Icon from './Icon'
-import { toast } from '../utils/toast'
-import { exportarRespaldo, importarRespaldo } from '../utils/backup'
+import { Icon } from '../../components'
+import { toast } from '../../utils'
+import { exportarRespaldo, importarRespaldo } from '../../utils'
 
 const PERMS = [
   { key: 'facturar', label: 'Facturar y ver facturas' },

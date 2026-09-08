@@ -1,6 +1,6 @@
-import { derivarEstado } from '../utils/analytics'
-import { formatColones } from '../utils/currency'
-import Icon from './Icon'
+import { derivarEstado } from '../../utils'
+import { formatColones } from '../../utils'
+import { Icon } from '../../components'
 
 function Payments({ invoices, onPayInvoice }) {
   const pagadas = invoices.filter((inv) => derivarEstado(inv) === 'Pagada')

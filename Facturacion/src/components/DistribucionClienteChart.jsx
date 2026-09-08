@@ -6,7 +6,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
-import { formatColones } from '../utils/currency'
+import { formatColones } from '../utils'
 
 const COLORS = ['#1b2b4f', '#c9a227', '#2c3e6b', '#8a6d1d', '#16233f', '#3b4f8f', '#a5822a']
 

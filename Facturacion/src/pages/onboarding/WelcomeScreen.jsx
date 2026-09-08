@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import Logo from './Logo'
-import Icon from './Icon'
-import { isSoundEnabled, setSoundEnabled, playChime, speak } from '../utils/sound'
+import { Logo } from '../../components'
+import { Icon } from '../../components'
+import { isSoundEnabled, setSoundEnabled, playChime, speak } from '../../utils'
 
 function WelcomeScreen({ onComplete }) {
   const [name, setName] = useState('')

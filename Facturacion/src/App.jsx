@@ -1,13 +1,9 @@
 import { useState } from 'react'
 import './App.css'
-import WelcomeScreen from './components/WelcomeScreen'
-import BusinessNameScreen from './components/BusinessNameScreen'
-import BusinessSelect from './components/BusinessSelect'
-import AccountSetup from './components/AccountSetup'
-import LoginScreen from './components/LoginScreen'
-import Dashboard from './components/Dashboard'
-import Toaster from './components/Toaster'
-import { getBusinessType } from './data/businessTypes'
+import { Toaster } from './components'
+import { BusinessSelect, LoginScreen, Dashboard } from './pages'
+import { onboardingSteps } from './routes'
+import { getBusinessType } from './data'
 
 const USERS_KEY = 'aiden-users'
 const SESSION_KEY = 'aiden-session'
@@ -145,56 +141,57 @@ return (
     )
   }
 
-  // Primer uso → onboarding.
-  switch (step) {
-    case 'welcome':
-      return (
-        <AppRoot>
-          <WelcomeScreen
-            onComplete={(name) => {
-              saveSettings({ ...settings, userName: name })
-              setStep('empresa')
-            }}
-          />
-        </AppRoot>
-      )
-    case 'empresa':
-      return (
-        <AppRoot>
-          <BusinessNameScreen
-            onComplete={(name) => {
-              saveSettings({ ...settings, businessName: name })
-              setStep('cuenta')
-            }}
-          />
-        </AppRoot>
-      )
-    default:
-      return (
-        <AppRoot>
-          <AccountSetup
-            userName={settings.userName || ''}
-            onComplete={({ username, password, nombre }) => {
-              const admin = {
-                username,
-                password,
-                nombre,
-                role: 'admin',
-                permisos: {
-                  facturar: true,
-                  cobrar: true,
-                  inventario: true,
-                  reservas: true,
-                  panel: true,
-                },
-              }
-              saveUsers([admin])
-              doLogin(admin)
-            }}
-          />
-        </AppRoot>
-      )
+  // Primer uso → onboarding guiado por las rutas registradas.
+  const stepConfig = onboardingSteps.find((s) => s.id === step) || onboardingSteps[0]
+  const StepScreen = stepConfig.Component
+  if (step === 'welcome') {
+    return (
+      <AppRoot>
+        <StepScreen
+          onComplete={(name) => {
+            saveSettings({ ...settings, userName: name })
+            setStep('empresa')
+          }}
+        />
+      </AppRoot>
+    )
   }
+  if (step === 'empresa') {
+    return (
+      <AppRoot>
+        <StepScreen
+          onComplete={(name) => {
+            saveSettings({ ...settings, businessName: name })
+            setStep('cuenta')
+          }}
+        />
+      </AppRoot>
+    )
+  }
+  return (
+    <AppRoot>
+      <StepScreen
+        userName={settings.userName || ''}
+        onComplete={({ username, password, nombre }) => {
+          const admin = {
+            username,
+            password,
+            nombre,
+            role: 'admin',
+            permisos: {
+              facturar: true,
+              cobrar: true,
+              inventario: true,
+              reservas: true,
+              panel: true,
+            },
+          }
+          saveUsers([admin])
+          doLogin(admin)
+        }}
+      />
+    </AppRoot>
+  )
 }
 
 export default App

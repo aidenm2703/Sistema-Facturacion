@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
-import Logo from './Logo'
-import Icon from './Icon'
-import { toast } from '../utils/toast'
+import { Logo } from '../../components'
+import { Icon } from '../../components'
+import { toast } from '../../utils'
 
 function LoginScreen({ users, onLogin, onReset }) {
   const [form, setForm] = useState({ username: '', password: '' })

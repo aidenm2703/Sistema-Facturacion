@@ -1,21 +1,10 @@
 import { useState } from 'react'
-import Logo from './Logo'
-import Icon from './Icon'
-import InvoiceForm from './InvoiceForm'
-import InvoiceList from './InvoiceList'
-import Invoice from './Invoice'
-import Payments from './Payments'
-import Reservations from './Reservations'
-import CalendarView from './CalendarView'
-import Inventory from './Inventory'
-import AdminDashboard from './AdminDashboard'
-import UsersManager from './UsersManager'
-import AboutScreen from './AboutScreen'
-import HelpScreen from './HelpScreen'
-import BusinessMark from './BusinessMark'
-import { formatColones } from '../utils/currency'
-import { toast } from '../utils/toast'
-import { guardarLocalJson } from '../utils/storage'
+import { Logo, Icon } from '../../components'
+import { sidebarSections, isSectionAllowed, renderPage } from '../../routes'
+import NotAllowed from './NotAllowed'
+import { formatColones } from '../../utils'
+import { toast } from '../../utils'
+import { guardarLocalJson } from '../../utils'
 
 const STORAGE_KEY = 'aiden-invoices'
 const RESERVATIONS_KEY = 'aiden-reservations'
@@ -54,6 +43,10 @@ function withDefaultDue(inv) {
   const d = new Date(inv.fecha)
   d.setDate(d.getDate() + 30)
   return { ...inv, fechaVencimiento: d.toISOString().slice(0, 10) }
+}
+
+function newInvoiceId() {
+  return 'inv-' + Date.now()
 }
 
 function buildTestDataset() {
@@ -197,7 +190,7 @@ function Dashboard({
   }
 
   const saveInvoice = (data) => {
-    const inv = withDefaultDue(computeTotals({ id: 'inv-' + Date.now(), ...data }))
+    const inv = withDefaultDue(computeTotals({ id: newInvoiceId(), ...data }))
     const next = [inv, ...invoices]
     persistInvoices(next)
     consumeStock(data.items)
@@ -251,27 +244,9 @@ function Dashboard({
     )
   }
 
-  const navItems = [
-    { id: 'home', label: 'Inicio', icon: 'home' },
-    ...(can('facturar')
-      ? [
-          { id: 'create', label: 'Crear factura', icon: 'create' },
-          { id: 'invoices', label: 'Mis facturas', icon: 'invoices' },
-        ]
-      : []),
-    ...(can('cobrar') ? [{ id: 'payments', label: 'Pagos', icon: 'payments' }] : []),
-    ...(can('reservas')
-      ? [
-          { id: 'reservations', label: 'Reservas', icon: 'reservas' },
-          { id: 'calendar', label: 'Calendario', icon: 'calendario' },
-        ]
-      : []),
-    ...(can('inventario') ? [{ id: 'inventory', label: 'Inventario', icon: 'inventario' }] : []),
-    ...(can('panel') ? [{ id: 'panel', label: 'Panel Admin', icon: 'panel' }] : []),
-    ...(isAdmin ? [{ id: 'usuarios', label: 'Usuarios', icon: 'usuarios' }] : []),
-    { id: 'about', label: '¿Quiénes somos?', icon: 'info' },
-    { id: 'help', label: 'Ayuda', icon: 'help' },
-  ]
+  const navItems = sidebarSections
+    .filter((s) => s.inSidebar !== false && isSectionAllowed(s, { isAdmin, can }))
+    .map((s) => ({ id: s.id, label: s.label, icon: s.icon }))
 
   const quickActions = [
     can('facturar') && {
@@ -306,170 +281,35 @@ function Dashboard({
     },
   ].filter(Boolean)
 
-  const renderContent = () => {
-    switch (view) {
-      case 'create':
-        return can('facturar') ? (
-          <InvoiceForm
-            business={business}
-            businessName={businessName || business.name}
-            nextInvoiceNumber={nextNumber}
-            catalog={catalog}
-            onSave={saveInvoice}
-            onCancel={() => setView('invoices')}
-          />
-        ) : (
-          <NotAllowed />
-        )
-      case 'invoices':
-        return can('facturar') ? (
-          <InvoiceList
-            invoices={invoices}
-            onSelect={selectInvoice}
-            onNew={() => setView('create')}
-          />
-        ) : (
-          <NotAllowed />
-        )
-      case 'detail':
-        return can('facturar') && selected ? (
-          <Invoice invoice={selected} onBack={() => setView('invoices')} />
-        ) : (
-          <NotAllowed />
-        )
-      case 'payments':
-        return can('cobrar') ? (
-          <Payments invoices={invoices} onPayInvoice={markPaid} />
-        ) : (
-          <NotAllowed />
-        )
-      case 'reservations':
-        return can('reservas') ? (
-          <Reservations
-            businessName={businessName || business.name}
-            businessTypeName={business.name}
-            reservations={reservations}
-            onAdd={saveReservation}
-            onRemove={removeReservation}
-            onGoCalendar={() => setView('calendar')}
-          />
-        ) : (
-          <NotAllowed />
-        )
-      case 'calendar':
-        return can('reservas') ? (
-          <CalendarView reservations={reservations} onRemove={removeReservation} />
-        ) : (
-          <NotAllowed />
-        )
-      case 'inventory':
-        return can('inventario') ? (
-          <Inventory
-            businessName={businessName || business.name}
-            businessId={business.id}
-            catalog={catalog}
-            onSaveCatalog={saveCatalog}
-            canEdit={isAdmin}
-          />
-        ) : (
-          <NotAllowed />
-        )
-      case 'panel':
-        return can('panel') ? (
-          <AdminDashboard
-            invoices={invoices}
-            onViewInvoice={selectInvoice}
-            onLoadTestData={loadTestDataset}
-          />
-        ) : (
-          <NotAllowed />
-        )
-      case 'usuarios':
-        return isAdmin ? (
-          <UsersManager users={users} saveUsers={saveUsers} currentUser={currentUser} />
-        ) : (
-          <NotAllowed />
-        )
-      case 'about':
-        return (
-          <AboutScreen
-            businessName={businessName || business.name}
-            userName={userName}
-            currentUser={currentUser}
-          />
-        )
-      case 'help':
-        return <HelpScreen />
-      default:
-        return (
-          <div className="home-content">
-            <div className="home-card">
-              <div className="home-hero-row">
-                <div className="home-hero-text">
-                  <h2>Buen día, {currentUser.nombre || userName}.</h2>
-                  <p className="subtitle">
-                    {businessName || business.name} ·{' '}
-                    {isAdmin ? 'Perfil de administrador' : 'Perfil de empleado'}
-                  </p>
-                </div>
-                <div className="home-business-badge">
-                  <span className="biz-badge-letter" style={{ background: business.color }}>
-                    <BusinessMark id={business.id} size={22} color="#fff" />
-                  </span>
-                  <span>
-                    <strong>{business.name}</strong>
-                    <small>{business.items.length} productos precargados</small>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="home-grid">
-              {quickActions.map((q) => (
-                <button
-                  key={q.go}
-                  type="button"
-                  className="quick-card"
-                  onClick={() => setView(q.go)}
-                >
-                  <span className="quick-icon">
-                    <Icon name={q.icon} size={26} />
-                  </span>
-                  <strong>{q.label}</strong>
-                  <span>{q.desc}</span>
-                </button>
-              ))}
-            </div>
-
-            {isAdmin && (
-              <div className="test-data-card">
-                <h3>Dataset de prueba (reto analítico)</h3>
-                <p>
-                  Carga las <strong>8 facturas de TechStore S.A.</strong> para validar el panel
-                  administrativo: detección de la factura atípica de{' '}
-                  <strong>{formatColones(1274000)}</strong> y el conteo de estados (vencidas,
-                  pendientes y pagadas).
-                </p>
-                <button type="button" className="btn btn-primary" onClick={loadTestDataset}>
-                  Cargar dataset de prueba
-                </button>
-              </div>
-            )}
-          </div>
-        )
-    }
+  const ctx = {
+    go: setView,
+    business,
+    businessName: businessName || business.name,
+    catalog,
+    nextNumber,
+    invoices,
+    selected,
+    saveInvoice,
+    markPaid,
+    selectInvoice,
+    reservations,
+    saveReservation,
+    removeReservation,
+    saveCatalog,
+    loadTestDataset,
+    users,
+    saveUsers,
+    currentUser,
+    userName,
+    isAdmin,
+    quickActions,
+    formatColones,
   }
 
-  function NotAllowed() {
-    return (
-      <div className="empty-state">
-        <div className="empty-icon">
-          <Icon name="alert" size={36} />
-        </div>
-        <h3>Acceso restringido</h3>
-        <p>Tu perfil no tiene permisos para esta sección. Contacta al administrador.</p>
-      </div>
-    )
+  const renderContent = () => {
+    const section = sidebarSections.find((s) => s.id === view)
+    if (!isSectionAllowed(section, { isAdmin, can })) return <NotAllowed />
+    return renderPage(view, ctx)
   }
 
   return (

@@ -1,5 +1,5 @@
-import { derivarEstado } from '../utils/analytics'
-import { formatColones } from '../utils/currency'
+import { derivarEstado } from '../../utils'
+import { formatColones } from '../../utils'
 
 function Invoice({ invoice, onBack }) {
   const estado = derivarEstado(invoice)
