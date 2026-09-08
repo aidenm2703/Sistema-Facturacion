@@ -111,11 +111,13 @@ function HelpScreen() {
 
   const simulateCall = (c) => {
     if (calling) return
+    setSentMail(null)
     setCalling(c)
     setTimeout(() => setCalling(null), 4000)
   }
 
   const simulateMail = (c) => {
+    setCalling(null)
     setSentMail(c)
     setTimeout(() => setSentMail(null), 3200)
   }
@@ -153,15 +155,15 @@ function HelpScreen() {
                   </div>
                 </div>
                 <div className="contact-lines">
-                  <span>
+                  <span className="line-phone">
                     <Icon name="phone" size={14} />
                     <span className="contact-lines-text">{c.telefono}</span>
                   </span>
-                  <span>
+                  <span className="line-mail">
                     <Icon name="mail" size={14} />
                     <span className="contact-lines-text">{c.correo}</span>
                   </span>
-                  <span className="contact-horario">
+                  <span className="contact-horario line-horario">
                     <Icon name="clock" size={14} />
                     <span className="contact-lines-text">{c.horario}</span>
                   </span>

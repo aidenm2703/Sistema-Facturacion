@@ -1908,25 +1908,29 @@ th.num {
 .contact-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .contact-card {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 15px 16px;
+  padding: 13px 15px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  justify-content: flex-start;
 }
 .contact-head {
   display: flex;
   gap: 12px;
   align-items: center;
+  width: 100%;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #eef1f6;
 }
 .contact-id {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   background: var(--blue-soft);
   color: var(--navy-2);
@@ -1938,6 +1942,9 @@ th.num {
 .contact-head div {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 .contact-head strong {
   font-size: 15px;
@@ -1945,33 +1952,68 @@ th.num {
 .contact-head small {
   font-size: 12.5px;
   color: var(--body);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .contact-lines {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   box-sizing: border-box;
+}
+.contact-lines {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.contact-lines .line-phone {
+  grid-column: 1;
+}
+.contact-lines .line-horario {
+  grid-column: 2;
+}
+.contact-lines .line-mail {
+  grid-column: 1 / -1;
+}
+@media (max-width: 560px) {
+  .contact-lines {
+    grid-template-columns: 1fr;
+  }
+  .contact-lines .line-phone,
+  .contact-lines .line-mail,
+  .contact-lines .line-horario {
+    grid-column: 1;
+  }
 }
 .contact-lines span {
   display: grid;
   grid-template-columns: 18px 1fr;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--navy-3);
   font-weight: 600;
   min-width: 0;
+  padding: 6px 9px;
+  background: #f8fafd;
+  border: 1px solid #edf0f7;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 .contact-lines span svg {
   justify-self: center;
+  flex-shrink: 0;
 }
 .contact-lines .contact-lines-text {
   min-width: 0;
-  overflow-wrap: anywhere;
-}
-.contact-card .contact-lines span {
-  width: 100%;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 .contact-horario {
   color: var(--muted) !important;
@@ -1981,6 +2023,13 @@ th.num {
 .contact-actions {
   display: flex;
   gap: 8px;
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px solid #eef1f6;
+}
+.contact-actions .btn {
+  flex: 1;
+  justify-content: center;
 }
 .help-call-feedback,
 .help-mail-feedback {
@@ -2016,6 +2065,7 @@ th.num {
   flex-direction: column;
   min-height: 460px;
   width: 100%;
+  flex: 1;
 }
 .chat-head {
   display: flex;
