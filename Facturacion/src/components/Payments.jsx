@@ -1,6 +1,6 @@
 import { derivarEstado } from '../utils/analytics'
-
-const formatMoney = (n) => '$' + Number(n || 0).toFixed(2)
+import { formatColones } from '../utils/currency'
+import Icon from './Icon'
 
 function Payments({ invoices, onPayInvoice }) {
   const pagadas = invoices.filter((inv) => derivarEstado(inv) === 'Pagada')
@@ -21,12 +21,12 @@ function Payments({ invoices, onPayInvoice }) {
       <div className="stat-cards">
         <div className="stat-card">
           <span className="stat-label">Por cobrar</span>
-          <span className="stat-value warn">{formatMoney(totalPendiente)}</span>
+          <span className="stat-value warn">{formatColones(totalPendiente)}</span>
           <span className="stat-sub">{pendientesList.length} factura(s)</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Cobrado</span>
-          <span className="stat-value ok">{formatMoney(totalPagado)}</span>
+          <span className="stat-value ok">{formatColones(totalPagado)}</span>
           <span className="stat-sub">{pagadas.length} factura(s)</span>
         </div>
         <div className="stat-card">
@@ -38,7 +38,9 @@ function Payments({ invoices, onPayInvoice }) {
 
       {invoices.length === 0 ? (
         <div className="empty-state small">
-          <div className="empty-icon">💳</div>
+          <div className="empty-icon">
+            <Icon name="payments" size={40} />
+          </div>
           <h3>No hay facturas para cobrar</h3>
           <p>Crea facturas para registrar pagos.</p>
         </div>
@@ -47,7 +49,8 @@ function Payments({ invoices, onPayInvoice }) {
           <h3 className="subtitle">Facturas por cobrar (pendientes y vencidas)</h3>
           {pendientesList.length === 0 ? (
             <div className="empty-state small">
-              <h3>✓ Todas las facturas están pagadas</h3>
+              <Icon name="check" size={22} />
+              <h3>Todas las facturas están pagadas</h3>
             </div>
           ) : (
             <div className="pay-list">
@@ -63,14 +66,14 @@ function Payments({ invoices, onPayInvoice }) {
                         {inv.cliente} · vence {inv.fechaVencimiento || '—'}
                       </span>
                     </div>
-                    <div className="pay-amount">{formatMoney(inv.total)}</div>
+                    <div className="pay-amount">{formatColones(inv.total)}</div>
                     <span className={`invoice-status ${badgeClass}`}>{estado}</span>
                     <button
                       type="button"
                       className="btn btn-success"
                       onClick={() => markPaid(inv)}
                     >
-                      ✓ Registrar pago
+                      <Icon name="check" size={14} /> Registrar pago
                     </button>
                   </div>
                 )
@@ -86,8 +89,8 @@ function Payments({ invoices, onPayInvoice }) {
                   <strong>Factura N° {inv.numero}</strong>
                   <span>{inv.cliente}</span>
                 </div>
-                <div className="pay-amount">{formatMoney(inv.total)}</div>
-                <span className="invoice-status badge-pagada">PAGADA ✓</span>
+                <div className="pay-amount">{formatColones(inv.total)}</div>
+                <span className="invoice-status badge-pagada">PAGADA</span>
               </div>
             ))}
           </div>

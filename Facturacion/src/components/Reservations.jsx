@@ -1,22 +1,26 @@
 import { useState } from 'react'
+import { formatColones } from '../utils/currency'
+import Icon from './Icon'
 
-function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalendar }) {
-  const [form, setForm] = useState({
+function Reservations({ businessName, businessTypeName, reservations, onAdd, onRemove, onGoCalendar }) {
+  const [form, setForm] = useState(() => ({
     cliente: '',
     contacto: '',
     fecha: new Date().toISOString().slice(0, 10),
     hora: '20:00',
     personas: 2,
+    señal: false,
     notas: '',
-  })
+  }))
   const [reserveErrors, setReserveErrors] = useState({})
   const [callingId, setCallingId] = useState(null)
   const [lastCall, setLastCall] = useState(null)
 
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
-  const pagoPorPersona = businessName === 'Restaurante' ? 80 : 50
-  const anticipo = form.personas * pagoPorPersona
+  const esRestaurante = (businessTypeName || businessName || '').toLowerCase() === 'restaurante'
+  const pagoPorPersona = esRestaurante ? 15000 : 10000
+  const anticipo = form.señal ? form.personas * pagoPorPersona : 0
 
   const submit = (e) => {
     e.preventDefault()
@@ -44,6 +48,7 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
       fecha: new Date().toISOString().slice(0, 10),
       hora: '20:00',
       personas: 2,
+      señal: false,
       notas: '',
     })
   }
@@ -62,14 +67,14 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
     <div className="reservations">
       <div className="reserve-head">
         <div>
-          <h2>📅 Sistema de reservas</h2>
+          <h2>Sistema de reservas</h2>
           <p className="subtitle">
             Reserva una mesa o cita para varias personas y simula llamar al cliente.
           </p>
         </div>
         {onGoCalendar && (
           <button type="button" className="btn btn-ghost" onClick={onGoCalendar}>
-            Ver calendario 🗓️
+            <Icon name="calendario" size={16} /> Ver calendario
           </button>
         )}
       </div>
@@ -93,7 +98,7 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
               type="text"
               value={form.contacto}
               onChange={(e) => setField('contacto', e.target.value)}
-              placeholder="+51 955 123 456"
+              placeholder="+506 8888 9999"
             />
           </label>
           <div className="form-grid">
@@ -147,6 +152,23 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
               <span className="error">{reserveErrors.personas}</span>
             )}
           </label>
+
+          <label className="señal-check">
+            <input
+              type="checkbox"
+              checked={form.señal}
+              onChange={(e) => setField('señal', e.target.checked)}
+            />
+            <span>
+              Cobrar señal por adelantado
+              <small>
+                {form.señal
+                  ? `${form.personas} × ${formatColones(pagoPorPersona)} = ${formatColones(anticipo)}`
+                  : 'No se cobra dinero por adelantado.'}
+              </small>
+            </span>
+          </label>
+
           <label>
             Notas
             <textarea
@@ -157,15 +179,13 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
             />
           </label>
 
-          <div className="anticipo-box">
-            <span>
-              Anticipo estimado ({form.personas} × ${pagoPorPersona})
-            </span>
-            <strong>{formatMoney(anticipo)}</strong>
+          <div className={`anticipo-box ${form.señal ? 'with-señal' : 'no-señal'}`}>
+            <span>{form.señal ? 'Señal por adelantado' : 'Sin señal (sin cargo)'}</span>
+            <strong>{form.señal ? formatColones(anticipo) : '₡0,00'}</strong>
           </div>
 
           <button type="submit" className="btn btn-primary btn-block">
-            📅 Agregar reserva
+            <Icon name="reservas" size={16} /> Agregar reserva
           </button>
         </form>
 
@@ -173,7 +193,9 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
           <h3>Reservas activas ({reservations.length})</h3>
           {reservations.length === 0 ? (
             <div className="empty-state small">
-              <div className="empty-icon">📅</div>
+              <div className="empty-icon">
+                <Icon name="reservas" size={40} />
+              </div>
               <h3>Sin reservas</h3>
               <p>Tus reservas aparecerán aquí.</p>
             </div>
@@ -185,13 +207,15 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
                   <span className="badge confirmada">{r.estado}</span>
                 </div>
                 <div className="reserve-card-meta">
-                  <span>📅 {r.fecha} · ⏰ {r.hora}</span>
-                  <span>👤 {r.personas} pers.</span>
+                  <span>{r.fecha} · {r.hora}</span>
+                  <span>{r.personas} pers.</span>
                 </div>
-                {r.contactoTel && <p className="reserve-contact">📞 {r.contactoTel}</p>}
+                {r.contactoTel && <p className="reserve-contact">{r.contactoTel}</p>}
                 {r.notas && <p className="reserve-notes">{r.notas}</p>}
                 <div className="reserve-card-foot">
-                  <span className="anticipo-text">Anticipo: {formatMoney(r.anticipo)}</span>
+                  <span className={`anticipo-text ${r.anticipo ? '' : 'no-señal-text'}`}>
+                    {r.anticipo ? `Señal: ${formatColones(r.anticipo)}` : 'Sin señal'}
+                  </span>
                   <div className="reserve-actions">
                     <button
                       type="button"
@@ -199,7 +223,15 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
                       onClick={() => simulateCall(r)}
                       disabled={!!callingId}
                     >
-                      {callingId === r.id ? '📞 Llamando...' : '📞 Llamar'}
+                      {callingId === r.id ? (
+                        <>
+                          <Icon name="clock" size={14} /> Llamando...
+                        </>
+                      ) : (
+                        <>
+                          <Icon name="phone" size={14} /> Llamar
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -216,14 +248,17 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
 
           {lastCall && callingId && (
             <div className="call-popup">
-              <div className="call-popup-ring">📞</div>
+              <div className="call-phone-icon">
+                <Icon name="phone" size={26} />
+              </div>
               <strong>Llamando a {lastCall.cliente}...</strong>
               <span>{lastCall.contactoTel || 'Sin teléfono'}</span>
             </div>
           )}
           {lastCall && !callingId && (
             <div className="call-popup done">
-              <strong>✓ Fin de la llamada con {lastCall.cliente}</strong>
+              <Icon name="check" size={18} />
+              <strong>Fin de la llamada con {lastCall.cliente}</strong>
               <span>El cliente fue notificado de su reserva.</span>
             </div>
           )}
@@ -232,7 +267,5 @@ function Reservations({ businessName, reservations, onAdd, onRemove, onGoCalenda
     </div>
   )
 }
-
-const formatMoney = (n) => '$' + Number(n || 0).toFixed(2)
 
 export default Reservations

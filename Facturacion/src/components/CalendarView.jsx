@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { formatColones } from '../utils/currency'
+import Icon from './Icon'
 
 function CalendarView({ reservations, onRemove }) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -44,10 +46,7 @@ function CalendarView({ reservations, onRemove }) {
     ? reservationsByDay(selectedDate.d)
     : []
 
-  const totalPeople = reservationsByDay(selectedDate ? selectedDate.d : -1).reduce(
-    (acc, r) => acc + r.personas,
-    0,
-  )
+  const totalPeople = selectedReservations.reduce((acc, r) => acc + r.personas, 0)
 
   const simulateCall = (res) => {
     if (callingId) return
@@ -64,21 +63,22 @@ function CalendarView({ reservations, onRemove }) {
     const key = iso(year, month, d)
     const isToday = key === todayIso
     const isSelected = key === selectedIso
-    const isEmpty = res.length === 0
+    const hasReservations = res.length > 0
     cells.push(
       <button
         key={key}
         type="button"
-        className={`cal-cell day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+        className={`cal-cell day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${hasReservations ? 'has-res' : ''}`}
         onClick={() => setSelectedDate({ y: year, m: month, d })}
       >
         <span className="day-num">{d}</span>
-        {res.length > 0 && (
+        {hasReservations && (
           <span className="day-res-count">
-            {res.length} reserva{res.length > 1 ? 's' : ''} · {res.reduce((a, r) => a + r.personas, 0)} pers.
+            {res.length} reserva{res.length > 1 ? 's' : ''} ·{' '}
+            {res.reduce((a, r) => a + r.personas, 0)} pers.
           </span>
         )}
-        {isEmpty && <span className="day-empty">—</span>}
+        {!hasReservations && <span className="day-empty">—</span>}
       </button>,
     )
   }
@@ -87,7 +87,7 @@ function CalendarView({ reservations, onRemove }) {
     <div className="calendar-view">
       <div className="calendar-head">
         <div>
-          <h2>🗓️ Calendario de reservas</h2>
+          <h2>Calendario de reservas</h2>
           <p className="subtitle">
             Reservas conectadas al calendario · haz clic en un día para ver los
             detalles.
@@ -124,7 +124,9 @@ function CalendarView({ reservations, onRemove }) {
             </h3>
             {selectedReservations.length === 0 ? (
               <div className="empty-state small">
-                <div className="empty-icon">📅</div>
+                <div className="empty-icon">
+                  <Icon name="calendario" size={40} />
+                </div>
                 <h3>No hay reservas este día</h3>
                 <p>Agrega una reserva para este día.</p>
               </div>
@@ -142,13 +144,13 @@ function CalendarView({ reservations, onRemove }) {
                         <span className="badge confirmada">{r.estado}</span>
                       </div>
                       <div className="reserve-card-meta">
-                        <span>⏰ {r.hora}</span>
-                        <span>👤 {r.personas} pers.</span>
+                        <span>{r.hora}</span>
+                        <span>{r.personas} pers.</span>
                       </div>
-                      {r.contactoTel && <p className="reserve-contact">📞 {r.contactoTel}</p>}
+                      {r.contactoTel && <p className="reserve-contact">{r.contactoTel}</p>}
                       <div className="reserve-card-foot">
-                        <span className="anticipo-text">
-                          Anticipo: {formatMoney(r.anticipo)}
+                        <span className={`anticipo-text ${r.anticipo ? '' : 'no-señal-text'}`}>
+                          {r.anticipo ? `Señal: ${formatColones(r.anticipo)}` : 'Sin señal'}
                         </span>
                         <div className="reserve-actions">
                           <button
@@ -157,7 +159,15 @@ function CalendarView({ reservations, onRemove }) {
                             onClick={() => simulateCall(r)}
                             disabled={!!callingId}
                           >
-                            {callingId === r.id ? '📞 Llamando...' : '📞 Llamar'}
+                            {callingId === r.id ? (
+                              <>
+                                <Icon name="clock" size={14} /> Llamando...
+                              </>
+                            ) : (
+                              <>
+                                <Icon name="phone" size={14} /> Llamar
+                              </>
+                            )}
                           </button>
                           <button
                             type="button"
@@ -172,7 +182,9 @@ function CalendarView({ reservations, onRemove }) {
                   ))}
                   {callingId && (
                     <div className="call-popup">
-                      <div className="call-popup-ring">📞</div>
+                      <div className="call-phone-icon">
+                        <Icon name="phone" size={26} />
+                      </div>
                       <strong>
                         Llamando a{' '}
                         {selectedReservations.find((r) => r.id === callingId)?.cliente}...
@@ -185,7 +197,9 @@ function CalendarView({ reservations, onRemove }) {
           </>
         ) : (
           <div className="empty-state small">
-            <div className="empty-icon">🗓️</div>
+            <div className="empty-icon">
+              <Icon name="calendario" size={40} />
+            </div>
             <h3>Selecciona un día</h3>
             <p>Haz clic en cualquier día del calendario para ver sus reservas.</p>
           </div>
@@ -194,7 +208,5 @@ function CalendarView({ reservations, onRemove }) {
     </div>
   )
 }
-
-const formatMoney = (n) => '$' + Number(n || 0).toFixed(2)
 
 export default CalendarView

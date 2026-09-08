@@ -1,13 +1,14 @@
 import { useState } from 'react'
+import { formatColones } from '../utils/currency'
 
-function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
+function InvoiceForm({ business, businessName, nextInvoiceNumber, catalog, onSave, onCancel }) {
   const [form, setForm] = useState(() => {
     const hoy = new Date()
     const vencimiento = new Date(hoy)
     vencimiento.setDate(vencimiento.getDate() + 30)
     const iso = (d) => d.toISOString().slice(0, 10)
     return {
-      emisor: business?.name || '',
+      emisor: businessName || business?.name || '',
       RUC: business?.prefilled?.RUC || '',
       direccionEmpresa: business?.prefilled?.direccion || '',
       correoEmpresa: business?.prefilled?.correo || '',
@@ -17,7 +18,7 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
       numero: String(nextInvoiceNumber),
       fecha: iso(hoy),
       fechaVencimiento: iso(vencimiento),
-      impuesto: business?.prefilled?.impuesto ?? 18,
+      impuesto: business?.prefilled?.impuesto ?? 13,
       items: [{ descripcion: '', cantidad: 1, precio: 0 }],
     }
   })
@@ -41,7 +42,6 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
   const removeItem = (index) =>
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== index) }))
 
-  // Cargar un producto precargado del negocio
   const loadCatalogItem = (item) => {
     setForm((f) => ({
       ...f,
@@ -88,6 +88,8 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
     })
   }
 
+  const productCatalog = catalog && catalog.length > 0 ? catalog : business?.items || []
+
   return (
     <form className="invoice-form" onSubmit={handleSave} noValidate>
       <div className="form-header">
@@ -118,7 +120,7 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
               type="text"
               value={form.RUC}
               onChange={(e) => setField('RUC', e.target.value)}
-              placeholder="1234567890"
+              placeholder="3-101-123456"
             />
             {errors.RUC && <span className="error">{errors.RUC}</span>}
           </label>
@@ -223,27 +225,34 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
       <section className="form-section">
         <h3>Ítems (productos / servicios)</h3>
 
-        {business && business.items.length > 0 && (
+        {productCatalog.length > 0 && (
           <div className="catalog">
             <button
               type="button"
               className="btn btn-ghost-small"
               onClick={() => setShowCatalog((s) => !s)}
             >
-              {showCatalog ? 'Ocultar producto de ' : 'Cargar producto de '}
-              {business.icon} {business.name}
+              {showCatalog ? 'Ocultar productos' : 'Cargar producto del inventario'}
             </button>
             {showCatalog && (
               <div className="catalog-list">
-                {business.items.map((it) => (
+                {productCatalog.map((it) => (
                   <button
                     type="button"
-                    key={it.descripcion}
+                    key={it.id || it.descripcion}
                     className="catalog-item"
                     onClick={() => loadCatalogItem(it)}
                   >
-                    <span>{it.descripcion}</span>
-                    <span className="catalog-price">${it.precio.toFixed(2)}</span>
+                    <span>
+                      {it.descripcion}
+                      <small className={Number(it.stock) <= 5 ? 'low-stock' : ''}>
+                        {Number(it.stock) <= 5 && Number(it.stock) > 0
+                          ? ` · Quedan ${it.stock}`
+                          : ''}
+                        {Number(it.stock) === 0 ? ' · Sin existencias' : ''}
+                      </small>
+                    </span>
+                    <span className="catalog-price">{formatColones(it.precio)}</span>
                   </button>
                 ))}
               </div>
@@ -272,18 +281,18 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
               />
             </label>
             <label>
-              Precio unitario
+              Precio unitario (₡)
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="50"
                 value={item.precio}
                 onChange={(e) => setItem(index, 'precio', e.target.value)}
               />
             </label>
             <div className="item-sub">
               <span>Subtotal</span>
-              <strong>${((item.cantidad || 0) * (item.precio || 0)).toFixed(2)}</strong>
+              <strong>{formatColones((item.cantidad || 0) * (item.precio || 0))}</strong>
             </div>
             <button
               type="button"
@@ -309,21 +318,21 @@ function InvoiceForm({ business, nextInvoiceNumber, onSave, onCancel }) {
       <section className="form-summary">
         <div className="summary-line">
           <span>Subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span>{formatColones(subtotal)}</span>
         </div>
         <div className="summary-line">
           <span>Impuesto ({form.impuesto || 0}%)</span>
-          <span>${impTotal.toFixed(2)}</span>
+          <span>{formatColones(impTotal)}</span>
         </div>
         <div className="summary-line total">
           <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{formatColones(total)}</span>
         </div>
       </section>
 
       <div className="form-actions">
         <button type="submit" className="btn btn-primary">
-          💾 Guardar factura
+          Guardar factura
         </button>
       </div>
     </form>

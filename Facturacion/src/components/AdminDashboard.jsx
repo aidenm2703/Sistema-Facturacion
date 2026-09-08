@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import MetricCard from './MetricCard'
 import IngresosPeriodoChart from './IngresosPeriodoChart'
 import DistribucionClienteChart from './DistribucionClienteChart'
@@ -12,62 +12,19 @@ import {
   distribucionPorCliente,
   formatMoney,
 } from '../utils/analytics'
+import Icon from './Icon'
 
 function AdminDashboard({ invoices, onViewInvoice, onLoadTestData }) {
-  // Barrera de rol administrador
-  const [authorized, setAuthorized] = useState(
-    () => sessionStorage.getItem('admin-auth') === 'yes',
-  )
-  const [pw, setPw] = useState('')
-
-  const entrar = (e) => {
-    e.preventDefault()
-    if (pw === 'admin123') {
-      sessionStorage.setItem('admin-auth', 'yes')
-      setAuthorized(true)
-    } else {
-      alert('Contraseña incorrecta. Pista: admin123')
-    }
-  }
-
-  const cerrar = () => {
-    sessionStorage.removeItem('admin-auth')
-    setAuthorized(false)
-  }
-
-  return authorized ? (
+  return (
     <AdminContent
       invoices={invoices}
       onViewInvoice={onViewInvoice}
       onLoadTestData={onLoadTestData}
-      onLogout={cerrar}
     />
-  ) : (
-      <div className="admin-login">
-        <div className="admin-login-card">
-          <h2>🔐 Panel de Administración</h2>
-          <p>
-            Esta sección es exclusiva para el administrador. Ingresa la contraseña para
-            ver el panorama completo del negocio.
-          </p>
-          <form onSubmit={entrar}>
-            <input
-              type="password"
-              placeholder="Contraseña de administrador"
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="btn btn-primary btn-block">
-              Entrar al panel
-            </button>
-          </form>
-        </div>
-      </div>
-    )
+  )
 }
 
-function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
+function AdminContent({ invoices, onViewInvoice, onLoadTestData }) {
   // Cálculo derivado con useMemo: se actualiza automáticamente cuando cambian las facturas.
   const {
     metricas,
@@ -79,14 +36,14 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
     dataCliente,
     statsTotales,
   } = useMemo(() => {
-    const metricas = calcularMetricas(invoices)
+    const metricasNow = calcularMetricas(invoices)
     const datosAtipicos = detectarAtipicas(invoices)
     const atipicas = datosAtipicos.filter((i) => i.atipica)
     const top = topClientes(invoices, 3)
     const estados = conteoEstados(invoices)
     const proyeccion = proyectarIngresos(invoices, 3)
     return {
-      metricas,
+      metricas: metricasNow,
       datosAtipicos,
       top,
       estados,
@@ -95,7 +52,7 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
       dataCliente: distribucionPorCliente(invoices),
       statsTotales: {
         cantidadAtipicas: atipicas.length,
-        promedio: calcularMetricas(invoices).ticketPromedio,
+        promedio: metricasNow.ticketPromedio,
       },
     }
   }, [invoices])
@@ -104,23 +61,14 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
     <div className="admin-dashboard">
       <div className="admin-head">
         <div>
-          <h2>📊 Panel de Administración</h2>
-          <p className="subtitle">Panorama completo del negocio · rol administrador</p>
+          <h2>Panel de Administración</h2>
+          <p className="subtitle">Panorama completo del negocio · perfil administrador</p>
         </div>
-        <div className="admin-actions">
-          {onLoadTestData && (
-            <button type="button" className="btn btn-ghost" onClick={onLoadTestData}>
-              🧪 Cargar dataset de prueba
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={onLogout}
-          >
-            Cerrar sesión admin
+        {onLoadTestData && (
+          <button type="button" className="btn btn-ghost" onClick={onLoadTestData}>
+            <Icon name="invoices" size={16} /> Cargar dataset de prueba
           </button>
-        </div>
+        )}
       </div>
 
       {/* Métricas clave */}
@@ -128,27 +76,27 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
         <MetricCard
           label="Total facturado"
           value={formatMoney(metricas.totalFacturado)}
-          icon="💰"
-          color="#16a34a"
+          icon={<Icon name="invoices" size={20} />}
+          color="#1b2b4f"
           sub={`${metricas.numFacturas} factura(s)`}
         />
         <MetricCard
           label="N° de facturas"
           value={metricas.numFacturas}
-          icon="🧾"
-          color="#4f46e5"
+          icon={<Icon name="create" size={20} />}
+          color="#c9a227"
         />
         <MetricCard
           label="Ticket promedio"
           value={formatMoney(metricas.ticketPromedio)}
-          icon="🎫"
-          color="#9333ea"
+          icon={<Icon name="payments" size={20} />}
+          color="#2c3e6b"
         />
         <MetricCard
           label="Proyección de ingresos"
           value={formatMoney(proyeccion)}
-          icon="📈"
-          color="#ea580c"
+          icon={<Icon name="panel" size={20} />}
+          color="#8a6d1d"
           sub="estimación del siguiente período"
         />
       </div>
@@ -160,8 +108,8 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
             key={c.cliente}
             label={`Top ${i + 1} cliente`}
             value={c.cliente}
-            icon={['🥇', '🥈', '🥉'][i] || '⭐'}
-            color={['#f59e0b', '#94a3b8', '#b45309'][i]}
+            icon={<Icon name="usuarios" size={20} />}
+            color={['#c9a227', '#8a6d1d', '#66739b'][i]}
             sub={formatMoney(c.monto)}
           />
         ))}
@@ -169,10 +117,18 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
 
       {/* Estados */}
       <div className="status-bar">
-        <div className="status-chip pagada">✓ {estados.Pagada} Pagada</div>
-        <div className="status-chip pendiente">⏳ {estados.Pendiente} Pendiente</div>
-        <div className="status-chip vencida">⚠️ {estados.Vencida} Vencida</div>
-        <div className="status-chip atipica">🚩 {statsTotales.cantidadAtipicas} Atípica(s)</div>
+        <div className="status-chip pagada">
+          <Icon name="check" size={14} /> {estados.Pagada} Pagada
+        </div>
+        <div className="status-chip pendiente">
+          <Icon name="clock" size={14} /> {estados.Pendiente} Pendiente
+        </div>
+        <div className="status-chip vencida">
+          <Icon name="alert" size={14} /> {estados.Vencida} Vencida
+        </div>
+        <div className="status-chip atipica">
+          <Icon name="settings" size={14} /> {statsTotales.cantidadAtipicas} Atípica(s)
+        </div>
       </div>
 
       {/* Gráficos */}
@@ -204,7 +160,7 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
               </div>
               <div className="anomaly-amount">{formatMoney(inv.total)}</div>
               {inv.atipica ? (
-                <span className="anomaly-tag">🚩 Atípica</span>
+                <span className="anomaly-tag">Atípica</span>
               ) : (
                 <span className="anomaly-tag ok">Normal</span>
               )}
@@ -224,7 +180,7 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData, onLogout }) {
 
       {/* Proyección */}
       <div className="admin-section projection">
-        <h3>📈 Proyección de ingresos</h3>
+        <h3>Proyección de ingresos</h3>
         <p>
           La proyección estimada para el siguiente período es de{' '}
           <strong>{formatMoney(proyeccion)}</strong>.

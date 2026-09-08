@@ -1,6 +1,5 @@
 import { derivarEstado } from '../utils/analytics'
-
-const formatMoney = (n) => '$' + Number(n || 0).toFixed(2)
+import { formatColones } from '../utils/currency'
 
 function Invoice({ invoice, onBack }) {
   const estado = derivarEstado(invoice)
@@ -64,8 +63,8 @@ function Invoice({ invoice, onBack }) {
               <tr key={i}>
                 <td>{it.descripcion}</td>
                 <td className="num">{it.cantidad}</td>
-                <td className="num">{formatMoney(it.precio)}</td>
-                <td className="num">{formatMoney(it.cantidad * it.precio)}</td>
+                <td className="num">{formatColones(it.precio)}</td>
+                <td className="num">{formatColones(it.cantidad * it.precio)}</td>
               </tr>
             ))}
           </tbody>
@@ -74,22 +73,22 @@ function Invoice({ invoice, onBack }) {
         <div className="invoice-totals">
           <div className="totals-line">
             <span>Subtotal</span>
-            <span>{formatMoney(invoice.subtotal)}</span>
+            <span>{formatColones(invoice.subtotal)}</span>
           </div>
           <div className="totals-line">
             <span>Impuesto ({invoice.impuesto || 0}%)</span>
-            <span>{formatMoney(invoice.impTotal)}</span>
+            <span>{formatColones(invoice.impTotal)}</span>
           </div>
           <div className="totals-line grand">
             <span>TOTAL</span>
-            <span>{formatMoney(invoice.total)}</span>
+            <span>{formatColones(invoice.total)}</span>
           </div>
         </div>
 
         <div className="invoice-foot">
-          <p>¡Gracias por tu compra!</p>
+          <p>¡Gracias por su compra!</p>
           <p className="foot-terms">
-            Factura generada por Facturador Express · Estado derivado según fecha de
+            Factura generada por Aiden&apos;s System · Estado derivado según fecha de
             vencimiento y pago.
           </p>
         </div>

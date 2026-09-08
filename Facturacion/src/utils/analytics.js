@@ -112,9 +112,8 @@ export function distribucionPorCliente(invoices) {
   }))
 }
 
+import { formatColones } from './currency'
+
 export function formatMoney(n) {
-  return '$' + Number(n || 0).toLocaleString('es-ES', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  return formatColones(n)
 }

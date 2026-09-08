@@ -1,17 +1,19 @@
 import { derivarEstado } from '../utils/analytics'
-
-const formatMoney = (n) => '$' + Number(n || 0).toFixed(2)
+import { formatColones } from '../utils/currency'
+import Icon from './Icon'
 
 function InvoiceList({ invoices, onSelect, onNew }) {
   if (invoices.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-icon">🗒️</div>
+        <div className="empty-icon">
+          <Icon name="invoices" size={40} />
+        </div>
         <h3>No hay facturas registradas</h3>
         <p>Crea tu primera factura para que aparezca aquí.</p>
         {onNew && (
           <button type="button" className="btn btn-primary" onClick={onNew}>
-            + Nueva factura
+            <Icon name="plus" size={16} /> Nueva factura
           </button>
         )}
       </div>
@@ -24,7 +26,7 @@ function InvoiceList({ invoices, onSelect, onNew }) {
         <h2>Mis facturas</h2>
         {onNew && (
           <button type="button" className="btn btn-primary" onClick={onNew}>
-            + Nueva factura
+            <Icon name="plus" size={16} /> Nueva factura
           </button>
         )}
       </div>
@@ -58,7 +60,7 @@ function InvoiceList({ invoices, onSelect, onNew }) {
                 <td>
                   <span className={`invoice-status ${badgeClass}`}>{estado}</span>
                 </td>
-                <td className="num">{formatMoney(inv.total)}</td>
+                <td className="num">{formatColones(inv.total)}</td>
                 <td className="row-action">Ver →</td>
               </tr>
             )
