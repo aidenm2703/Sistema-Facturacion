@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import Icon from './Icon'
+import { toast } from '../utils/toast'
+import { exportarRespaldo, importarRespaldo } from '../utils/backup'
 
 const PERMS = [
   { key: 'facturar', label: 'Facturar y ver facturas' },
@@ -24,6 +27,43 @@ function UsersManager({ users, saveUsers, currentUser }) {
     permisos: emptyPermisos(),
   })
   const [errors, setErrors] = useState({})
+  const [confirming, setConfirming] = useState(null)
+  const confirmTimer = useRef(null)
+  const importInput = useRef(null)
+
+  const onExport = () => {
+    exportarRespaldo()
+    toast.success(
+      'Respaldo exportado',
+      'Se descargó un archivo con todos los datos para abrirlos en otra computadora.',
+    )
+  }
+
+  const onImportFile = (file) => {
+    if (!file) return
+    importarRespaldo(file)
+      .then((secciones) => {
+        toast.success(
+          'Respaldo restaurado',
+          `Se cargaron ${secciones.length} secciones de datos. El sistema se recargará en unos segundos.`,
+        )
+        setTimeout(() => location.reload(), 1400)
+      })
+      .catch(() =>
+        toast.danger('Error al restaurar', 'El archivo elegido no es un respaldo válido.'),
+      )
+  }
+
+  const askConfirm = (username) => {
+    if (confirming === username) {
+      setConfirming(null)
+      clearTimeout(confirmTimer.current)
+      saveUsers(users.filter((u) => u.username !== username))
+      return
+    }
+    setConfirming(username)
+    confirmTimer.current = setTimeout(() => setConfirming(null), 3500)
+  }
 
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }))
   const togglePerm = (key) =>
@@ -48,6 +88,7 @@ function UsersManager({ users, saveUsers, currentUser }) {
       permisos: { ...form.permisos },
     }
     saveUsers([...users, nuevo])
+    toast.success('Empleado agregado', `${form.nombre.trim()} ya puede ingresar al sistema.`)
     setForm({ nombre: '', username: '', password: '', permisos: emptyPermisos() })
   }
 
@@ -64,16 +105,10 @@ function UsersManager({ users, saveUsers, currentUser }) {
   const removeUser = (username) => {
     const target = users.find((u) => u.username === username)
     if (target.role === 'admin') {
-      alert('No se puede eliminar una cuenta de administrador.')
+      toast.danger('No es posible', 'No se puede eliminar una cuenta de administrador.')
       return
     }
-    if (
-      window.confirm(
-        `¿Eliminar al empleado "${target.nombre}"? Ya no podrá ingresar al sistema.`,
-      )
-    ) {
-      saveUsers(users.filter((u) => u.username !== username))
-    }
+    askConfirm(username)
   }
 
   return (
@@ -179,15 +214,53 @@ function UsersManager({ users, saveUsers, currentUser }) {
                 <div className="user-card-foot">
                   <button
                     type="button"
-                    className="btn btn-danger btn-small"
+                    className={`btn btn-small ${confirming === u.username ? 'btn-danger confirm-danger' : 'btn-danger'}`}
                     onClick={() => removeUser(u.username)}
                   >
-                    Eliminar
+                    {confirming === u.username ? (
+                      <>
+                        <Icon name="alert" size={13} /> Pulsa para confirmar
+                      </>
+                    ) : (
+                      'Eliminar'
+                    )}
                   </button>
                 </div>
               )}
             </div>
           ))}
+        </div>
+
+        <div className="backup-card">
+          <div className="backup-head">
+            <div>
+              <h3>Respaldo de datos</h3>
+              <p className="backup-desc">
+                Descarga un archivo con facturas, inventario (con imágenes), reservas y
+                usuarios. Luego restáuralo en cualquier otra computadora para tener todo
+                tu trabajo disponible.
+              </p>
+            </div>
+          </div>
+          <div className="backup-actions">
+            <button type="button" className="btn btn-primary" onClick={onExport}>
+              <Icon name="invoices" size={15} /> Exportar respaldo
+            </button>
+            <input
+              ref={importInput}
+              type="file"
+              accept="application/json,.json"
+              className="product-file"
+              onChange={(e) => onImportFile(e.target.files[0])}
+            />
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => importInput.current?.click()}
+            >
+              <Icon name="help" size={15} /> Restaurar respaldo
+            </button>
+          </div>
         </div>
       </div>
     </div>

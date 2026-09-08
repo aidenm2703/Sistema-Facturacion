@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import MetricCard from './MetricCard'
 import IngresosPeriodoChart from './IngresosPeriodoChart'
 import DistribucionClienteChart from './DistribucionClienteChart'
+import VentasPorDiaChart from './VentasPorDiaChart'
 import {
   calcularMetricas,
   detectarAtipicas,
@@ -10,6 +11,10 @@ import {
   proyectarIngresos,
   ingresosPorPeriodo,
   distribucionPorCliente,
+  ventasPorDia,
+  ventasPorSemana,
+  ventasPorDiaSemana,
+  mejorDiaDeVenta,
   formatMoney,
 } from '../utils/analytics'
 import Icon from './Icon'
@@ -34,6 +39,10 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData }) {
     proyeccion,
     dataPeriodo,
     dataCliente,
+    dataDia,
+    dataSemana,
+    dataDiaSemana,
+    mejorDia,
     statsTotales,
   } = useMemo(() => {
     const metricasNow = calcularMetricas(invoices)
@@ -50,6 +59,10 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData }) {
       proyeccion,
       dataPeriodo: ingresosPorPeriodo(invoices),
       dataCliente: distribucionPorCliente(invoices),
+      dataDia: ventasPorDia(invoices),
+      dataSemana: ventasPorSemana(invoices),
+      dataDiaSemana: ventasPorDiaSemana(invoices),
+      mejorDia: mejorDiaDeVenta(invoices),
       statsTotales: {
         cantidadAtipicas: atipicas.length,
         promedio: metricasNow.ticketPromedio,
@@ -135,6 +148,61 @@ function AdminContent({ invoices, onViewInvoice, onLoadTestData }) {
       <div className="chart-grid">
         <IngresosPeriodoChart data={dataPeriodo} />
         <DistribucionClienteChart data={dataCliente} />
+      </div>
+
+      {/* Ventas por día y por semana */}
+      <div className="admin-section sales-by-day">
+        <div className="sales-by-day-head">
+          <h3>Ventas por día y por semana</h3>
+          <div className="best-day-chip" title="Día de la semana con más ventas">
+            <Icon name="inventario" size={14} /> Mejor día: <strong>{mejorDia.dia || '—'}</strong>
+            <span className="best-day-amount">
+              {mejorDia.ingresos > 0 ? formatMoney(mejorDia.ingresos) : 'Sin ventas'}
+            </span>
+          </div>
+        </div>
+        <div className="day-week-grid">
+          <VentasPorDiaChart data={dataDia} />
+          <div className="week-panel">
+            <div className="week-panel-head">
+              <h4>Ventas por semana</h4>
+              <small>cada barra es una semana (lunes a domingo)</small>
+            </div>
+            <div className="week-list">
+              {dataSemana.length > 0 ? (
+                dataSemana.map((w) => {
+                  const max = Math.max(...dataSemana.map((x) => x.ingresos))
+                  const pct = max > 0 ? (w.ingresos / max) * 100 : 0
+                  return (
+                    <div key={w.semana} className="week-row">
+                      <span className="week-label">Semana del {w.semana}</span>
+                      <span className="week-bar-track">
+                        <span className="week-bar" style={{ width: `${pct}%` }} />
+                      </span>
+                      <span className="week-amount">{formatMoney(w.ingresos)}</span>
+                    </div>
+                  )
+                })
+              ) : (
+                <p className="chart-empty">Sin datos</p>
+              )}
+            </div>
+            <div className="weekday-list">
+              <div className="week-panel-head">
+                <h4>Día que más vende</h4>
+              </div>
+              {dataDiaSemana.map((d) => (
+                <div key={d.dia} className={`weekday-row ${d.dia === mejorDia.dia ? 'best' : ''}`}>
+                  <span>{d.dia}</span>
+                  <span className="week-amount">
+                    {formatMoney(d.ingresos)}
+                    {d.facturas > 0 && <small> · {d.facturas} fact.</small>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Facturas atípicas */}

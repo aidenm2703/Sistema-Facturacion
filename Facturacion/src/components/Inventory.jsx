@@ -1,12 +1,18 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { formatColones } from '../utils/currency'
+import { toast } from '../utils/toast'
+import { compressImage } from '../utils/storage'
 import Icon from './Icon'
+import BusinessMark from './BusinessMark'
 
-function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
+function Inventory({ businessName, businessId, catalog, onSaveCatalog, canEdit }) {
   const [items, setItems] = useState(() => catalog.map((it) => ({ ...it })))
   const [saved, setSaved] = useState(false)
   const [newItem, setNewItem] = useState({ descripcion: '', precio: '', stock: '' })
   const [newError, setNewError] = useState('')
+  const [confirming, setConfirming] = useState(null)
+  const confirmTimer = useRef(null)
+  const fileInputs = useRef({})
 
   const setItem = (id, key, value) =>
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [key]: value } : it)))
@@ -30,19 +36,41 @@ function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
     setNewError('')
     setItems((prev) => [
       ...prev,
-      { id: 'it-' + Date.now(), descripcion: desc, precio, stock },
+      { id: 'it-' + Date.now(), descripcion: desc, precio, stock, imagen: null },
     ])
     setNewItem({ descripcion: '', precio: '', stock: '' })
   }
 
-  const removeItem = (id) => {
-    if (!window.confirm('¿Eliminar este producto del inventario?')) return
-    setItems((prev) => prev.filter((it) => it.id !== id))
+  const readImage = async (file, id) => {
+    if (!file) return
+    try {
+      const dataUrl = await compressImage(file)
+      setItem(id, 'imagen', dataUrl)
+      toast.success(
+        'Imagen cargada',
+        'La imagen se redimensionó para ocupar poco espacio y se guardó correctamente.',
+      )
+    } catch {
+      toast.danger('Error', 'No se pudo procesar esa imagen. Prueba con otra.')
+    }
+  }
+
+  const askRemove = (id) => {
+    if (confirming === id) {
+      setConfirming(null)
+      clearTimeout(confirmTimer.current)
+      setItems((prev) => prev.filter((it) => it.id !== id))
+      return
+    }
+    setConfirming(id)
+    toast.warning('Eliminar producto', 'Pulsa de nuevo para confirmar la eliminación.')
+    confirmTimer.current = setTimeout(() => setConfirming(null), 3500)
   }
 
   const save = () => {
     onSaveCatalog(items)
     setSaved(true)
+    toast.success('Inventario guardado', 'Los cambios se guardaron correctamente.')
     setTimeout(() => setSaved(false), 2200)
   }
 
@@ -78,6 +106,7 @@ function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
         <table className="list-table">
           <thead>
             <tr>
+              <th></th>
               <th>#</th>
               <th>Descripción</th>
               <th className="num">Precio unitario</th>
@@ -89,6 +118,15 @@ function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
           <tbody>
             {items.map((it, idx) => (
               <tr key={it.id}>
+                <td className="product-thumb-cell">
+                  <span className="product-thumb">
+                    {it.imagen ? (
+                      <img src={it.imagen} alt={it.descripcion} />
+                    ) : (
+                      <BusinessMark id={businessId} size={20} color="#9fb2c9" />
+                    )}
+                  </span>
+                </td>
                 <td>{idx + 1}</td>
                 <td>
                   {canEdit ? (
@@ -100,6 +138,36 @@ function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
                     />
                   ) : (
                     it.descripcion
+                  )}
+                  {canEdit && (
+                    <span className="product-img-actions">
+                      <input
+                        ref={(el) => {
+                          fileInputs.current[it.id] = el
+                        }}
+                        type="file"
+                        accept="image/*"
+                        className="product-file"
+                        onChange={(e) => readImage(e.target.files[0], it.id)}
+                      />
+                      <button
+                        type="button"
+                        className="link-btn product-img-btn"
+                        onClick={() => fileInputs.current[it.id]?.click()}
+                      >
+                        <Icon name="settings" size={12} />
+                        {it.imagen ? 'Cambiar foto' : 'Cargar / tomar foto'}
+                      </button>
+                      {it.imagen && (
+                        <button
+                          type="button"
+                          className="link-btn link-btn-danger product-img-btn"
+                          onClick={() => setItem(it.id, 'imagen', null)}
+                        >
+                          Quitar foto
+                        </button>
+                      )}
+                    </span>
                   )}
                 </td>
                 <td className="num">
@@ -136,10 +204,10 @@ function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
                     <button
                       type="button"
                       className="btn btn-danger btn-square inv-remove"
-                      onClick={() => removeItem(it.id)}
+                      onClick={() => askRemove(it.id)}
                       title="Eliminar producto"
                     >
-                      ✕
+                      {confirming === it.id ? <Icon name="alert" size={14} /> : '✕'}
                     </button>
                   </td>
                 )}
@@ -180,6 +248,13 @@ function Inventory({ businessName, catalog, onSaveCatalog, canEdit }) {
         </div>
       )}
 
+      {canEdit && (
+        <p className="list-hint">
+          Pulsa «Cargar / tomar foto» para agregar una imagen a cada producto. Las
+          imágenes se guardan pequeñas y optimizadas para cargarse en cualquier
+          computadora. Los productos precargados usan un ícono según el tipo de negocio.
+        </p>
+      )}
       <p className="list-hint">
         Los precios de aquí se usan al facturar: al cargar un producto se toma su precio
         actual del inventario y se descuenta el stock vendido.

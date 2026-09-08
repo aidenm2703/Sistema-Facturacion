@@ -154,12 +154,17 @@ function HelpScreen() {
                 </div>
                 <div className="contact-lines">
                   <span>
-                    <Icon name="phone" size={14} /> {c.telefono}
+                    <Icon name="phone" size={14} />
+                    <span className="contact-lines-text">{c.telefono}</span>
                   </span>
                   <span>
-                    <Icon name="mail" size={14} /> {c.correo}
+                    <Icon name="mail" size={14} />
+                    <span className="contact-lines-text">{c.correo}</span>
                   </span>
-                  <span className="contact-horario">{c.horario}</span>
+                  <span className="contact-horario">
+                    <Icon name="clock" size={14} />
+                    <span className="contact-lines-text">{c.horario}</span>
+                  </span>
                 </div>
                 <div className="contact-actions">
                   <button

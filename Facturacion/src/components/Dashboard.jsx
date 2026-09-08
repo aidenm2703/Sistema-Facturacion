@@ -12,7 +12,10 @@ import AdminDashboard from './AdminDashboard'
 import UsersManager from './UsersManager'
 import AboutScreen from './AboutScreen'
 import HelpScreen from './HelpScreen'
+import BusinessMark from './BusinessMark'
 import { formatColones } from '../utils/currency'
+import { toast } from '../utils/toast'
+import { guardarLocalJson } from '../utils/storage'
 
 const STORAGE_KEY = 'aiden-invoices'
 const RESERVATIONS_KEY = 'aiden-reservations'
@@ -200,10 +203,12 @@ function Dashboard({
     consumeStock(data.items)
     setSelected(inv)
     setView('detail')
+    toast.success('Factura guardada', `Se guardó la factura ${inv.numero}.`)
   }
 
   const markPaid = (id) => {
     persistInvoices(invoices.map((inv) => (inv.id === id ? { ...inv, pagada: true } : inv)))
+    toast.success('Pago registrado', 'La factura quedó marcada como pagada.')
   }
 
   const selectInvoice = (inv) => {
@@ -215,6 +220,9 @@ function Dashboard({
     const next = [res, ...reservations]
     setReservations(next)
     localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(next))
+    toast.success('Reserva registrada', res.cliente
+      ? `Reserva a nombre de ${res.cliente}.`
+      : 'La reserva se guardó correctamente.')
   }
   const updateReservations = (res) => {
     setReservations(res)
@@ -224,15 +232,22 @@ function Dashboard({
 
   const saveCatalog = (items) => {
     const next = { ...inventory, [business.id]: items }
+    if (!guardarLocalJson(INVENTORY_KEY, next)) {
+      toast.danger(
+        'Espacio lleno',
+        'No se pudieron guardar los cambios. Exporta un respaldo o reduce el tamaño de las fotos.',
+      )
+      return
+    }
     setInventory(next)
-    localStorage.setItem(INVENTORY_KEY, JSON.stringify(next))
   }
 
   const loadTestDataset = () => {
     persistInvoices(buildTestDataset())
     setView('panel')
-    alert(
-      'Se cargaron las 8 facturas de prueba de TechStore S.A. para validar el panel administrativo.',
+    toast.info(
+      'Datos de prueba cargados',
+      'Se cargaron las 8 facturas de TechStore S.A. para validar el panel administrativo.',
     )
   }
 
@@ -351,6 +366,7 @@ function Dashboard({
         return can('inventario') ? (
           <Inventory
             businessName={businessName || business.name}
+            businessId={business.id}
             catalog={catalog}
             onSaveCatalog={saveCatalog}
             canEdit={isAdmin}
@@ -398,7 +414,7 @@ function Dashboard({
                 </div>
                 <div className="home-business-badge">
                   <span className="biz-badge-letter" style={{ background: business.color }}>
-                    {business.letra}
+                    <BusinessMark id={business.id} size={22} color="#fff" />
                   </span>
                   <span>
                     <strong>{business.name}</strong>

@@ -1,5 +1,6 @@
 import { businessTypes } from '../data/businessTypes'
 import Logo from './Logo'
+import BusinessMark from './BusinessMark'
 
 function BusinessSelect({ userName, onComplete }) {
   return (
@@ -24,7 +25,7 @@ function BusinessSelect({ userName, onComplete }) {
               onClick={() => onComplete(biz)}
             >
               <span className="biz-badge-letter" style={{ background: biz.color }}>
-                {biz.letra}
+                <BusinessMark id={biz.id} size={22} color="#fff" />
               </span>
               <span className="business-name">{biz.name}</span>
               <span className="business-desc">{biz.description}</span>

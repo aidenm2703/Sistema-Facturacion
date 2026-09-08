@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatColones } from '../utils/currency'
+import BusinessMark from './BusinessMark'
 
 function InvoiceForm({ business, businessName, nextInvoiceNumber, catalog, onSave, onCancel }) {
   const [form, setForm] = useState(() => {
@@ -243,6 +244,13 @@ function InvoiceForm({ business, businessName, nextInvoiceNumber, catalog, onSav
                     className="catalog-item"
                     onClick={() => loadCatalogItem(it)}
                   >
+                    <span className="catalog-thumb">
+                      {it.imagen ? (
+                        <img src={it.imagen} alt="" />
+                      ) : (
+                        <BusinessMark id={business?.id} size={18} color="#9fb2c9" />
+                      )}
+                    </span>
                     <span>
                       {it.descripcion}
                       <small className={Number(it.stock) <= 5 ? 'low-stock' : ''}>

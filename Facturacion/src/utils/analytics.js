@@ -112,6 +112,85 @@ export function distribucionPorCliente(invoices) {
   }))
 }
 
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+function fechaCorta(iso) {
+  if (!iso) return ''
+  const [, m, d] = iso.split('-').map(Number)
+  return `${d} ${MESES[m - 1] || ''}`
+}
+
+function lunesDeLaSemana(iso) {
+  const [y, m, d] = iso.split('-').map(Number)
+  const fecha = new Date(y, m - 1, d)
+  const dia = (fecha.getDay() + 6) % 7
+  fecha.setDate(fecha.getDate() - dia)
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(
+    fecha.getDate(),
+  ).padStart(2, '0')}`
+}
+
+// Ventas consolidadas por día (para el gráfico de detalle diario).
+export function ventasPorDia(invoices) {
+  const porDia = {}
+  invoices.forEach((inv) => {
+    if (!inv.fecha) return
+    porDia[inv.fecha] = (porDia[inv.fecha] || 0) + Number(inv.total || 0)
+  })
+  return Object.entries(porDia)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([fecha, ingresos]) => ({
+      fecha,
+      dia: fechaCorta(fecha),
+      ingresos: Math.round(ingresos * 100) / 100,
+    }))
+}
+
+// Ventas consolidadas por semana (lunes como inicio de semana).
+export function ventasPorSemana(invoices) {
+  const porSemana = {}
+  invoices.forEach((inv) => {
+    if (!inv.fecha) return
+    const key = lunesDeLaSemana(inv.fecha)
+    porSemana[key] = (porSemana[key] || 0) + Number(inv.total || 0)
+  })
+  return Object.entries(porSemana)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([fecha, ingresos]) => ({
+      semana: fechaCorta(fecha),
+      ingresos: Math.round(ingresos * 100) / 100,
+    }))
+}
+
+// Qué día de la semana vende más (Lunes a Domingo).
+export function ventasPorDiaSemana(invoices) {
+  const totales = new Array(7).fill(0)
+  const conteos = new Array(7).fill(0)
+  invoices.forEach((inv) => {
+    if (!inv.fecha) return
+    const [y, m, d] = inv.fecha.split('-').map(Number)
+    const fecha = new Date(y, m - 1, d)
+    const idx = (fecha.getDay() + 6) % 7
+    totales[idx] += Number(inv.total || 0)
+    conteos[idx] += 1
+  })
+  return DIAS_SEMANA.map((dia, idx) => ({
+    dia,
+    ingresos: Math.round(totales[idx] * 100) / 100,
+    facturas: conteos[idx],
+  }))
+}
+
+export function mejorDiaDeVenta(invoices) {
+  const porDia = ventasPorDiaSemana(invoices)
+  return porDia.reduce(
+    (mejor, actual) =>
+      !mejor.dia || actual.ingresos > mejor.ingresos ? actual : mejor,
+    { dia: '', ingresos: 0, facturas: 0 },
+  )
+}
+
 import { formatColones } from './currency'
 
 export function formatMoney(n) {

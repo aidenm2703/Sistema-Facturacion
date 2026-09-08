@@ -6,6 +6,7 @@ import BusinessSelect from './components/BusinessSelect'
 import AccountSetup from './components/AccountSetup'
 import LoginScreen from './components/LoginScreen'
 import Dashboard from './components/Dashboard'
+import Toaster from './components/Toaster'
 import { getBusinessType } from './data/businessTypes'
 
 const USERS_KEY = 'aiden-users'
@@ -32,6 +33,15 @@ function loadSettings() {
   } catch {
     return {}
   }
+}
+
+function AppRoot({ children }) {
+  return (
+    <div className="app-stage">
+      <Toaster />
+      {children}
+    </div>
+  )
 }
 
 function App() {
@@ -83,34 +93,34 @@ function App() {
   // Sesión activa → dashboard (o selección de negocio si falta).
   if (currentUser) {
     if (!business) {
-      return (
-        <div className="app-stage">
-          <BusinessSelect
-            userName={currentUser.nombre || userName}
-            onComplete={(biz) => saveSettings({ ...settings, businessId: biz.id })}
-          />
-        </div>
-      )
-    }
-    return (
-      <div className="app-stage">
-        <Dashboard
+return (
+      <AppRoot>
+        <BusinessSelect
           userName={currentUser.nombre || userName}
-          businessName={businessName}
-          business={business}
-          currentUser={currentUser}
-          users={users}
-          saveUsers={saveUsers}
-          onLogout={doLogout}
+          onComplete={(biz) => saveSettings({ ...settings, businessId: biz.id })}
         />
-      </div>
+      </AppRoot>
     )
   }
+  return (
+    <AppRoot>
+      <Dashboard
+        userName={currentUser.nombre || userName}
+        businessName={businessName}
+        business={business}
+        currentUser={currentUser}
+        users={users}
+        saveUsers={saveUsers}
+        onLogout={doLogout}
+      />
+    </AppRoot>
+  )
+}
 
   // Ya hay cuentas creadas → login.
   if (users.length > 0) {
     return (
-      <div className="app-stage">
+      <AppRoot>
         <LoginScreen
           users={users}
           onLogin={doLogin}
@@ -131,7 +141,7 @@ function App() {
             localStorage.removeItem(RESERVATIONS_KEY)
           }}
         />
-      </div>
+      </AppRoot>
     )
   }
 
@@ -139,29 +149,29 @@ function App() {
   switch (step) {
     case 'welcome':
       return (
-        <div className="app-stage">
+        <AppRoot>
           <WelcomeScreen
             onComplete={(name) => {
               saveSettings({ ...settings, userName: name })
               setStep('empresa')
             }}
           />
-        </div>
+        </AppRoot>
       )
     case 'empresa':
       return (
-        <div className="app-stage">
+        <AppRoot>
           <BusinessNameScreen
             onComplete={(name) => {
               saveSettings({ ...settings, businessName: name })
               setStep('cuenta')
             }}
           />
-        </div>
+        </AppRoot>
       )
     default:
       return (
-        <div className="app-stage">
+        <AppRoot>
           <AccountSetup
             userName={settings.userName || ''}
             onComplete={({ username, password, nombre }) => {
@@ -182,7 +192,7 @@ function App() {
               doLogin(admin)
             }}
           />
-        </div>
+        </AppRoot>
       )
   }
 }

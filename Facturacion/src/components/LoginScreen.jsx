@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Logo from './Logo'
+import Icon from './Icon'
+import { toast } from '../utils/toast'
 
 function LoginScreen({ users, onLogin, onReset }) {
   const [form, setForm] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const resetTimer = useRef(null)
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -18,13 +22,15 @@ function LoginScreen({ users, onLogin, onReset }) {
   }
 
   const handleReset = () => {
-    if (
-      window.confirm(
-        '¿Restablecer todos los datos del sistema? Se eliminarán los usuarios, facturas e inventario guardados.',
-      )
-    ) {
-      onReset()
+    if (!confirmingReset) {
+      setConfirmingReset(true)
+      toast.warning('Restablecer sistema', 'Pulsa de nuevo para confirmar que se borrarán todos los datos.')
+      resetTimer.current = setTimeout(() => setConfirmingReset(false), 3500)
+      return
     }
+    setConfirmingReset(false)
+    clearTimeout(resetTimer.current)
+    onReset()
   }
 
   return (
@@ -66,8 +72,18 @@ function LoginScreen({ users, onLogin, onReset }) {
           </button>
         </form>
 
-        <button type="button" className="link-btn" onClick={handleReset}>
-          ¿Olvidaste tu acceso? Restablecer sistema
+        <button
+          type="button"
+          className={`link-btn ${confirmingReset ? 'link-btn-danger' : ''}`}
+          onClick={handleReset}
+        >
+          {confirmingReset ? (
+            <>
+              <Icon name="alert" size={14} /> ¿Seguro? Pulsa de nuevo para restablecer
+            </>
+          ) : (
+            '¿Olvidaste tu acceso? Restablecer sistema'
+          )}
         </button>
       </div>
     </div>

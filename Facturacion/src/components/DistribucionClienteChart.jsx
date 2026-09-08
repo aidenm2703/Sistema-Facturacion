@@ -19,28 +19,39 @@ function DistribucionClienteChart({ data }) {
       </div>
     )
   }
+  const ordenado = [...data].sort((a, b) => b.monto - a.monto)
+  const total = ordenado.reduce((acc, d) => acc + Number(d.monto), 0)
   return (
     <div className="chart">
       <h4>Distribución por cliente</h4>
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={280}>
         <PieChart>
           <Pie
-            data={data}
+            data={ordenado}
             dataKey="monto"
             nameKey="cliente"
             innerRadius={55}
-            outerRadius={90}
-            paddingAngle={2}
-            label={(entry) => entry.cliente}
+            outerRadius={88}
+            paddingAngle={3}
+            stroke="#fff"
+            strokeWidth={2}
           >
-            {data.map((_, i) => (
+            {ordenado.map((_, i) => (
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip
-            formatter={(value) => [formatColones(Number(value)), 'Monto']}
+            formatter={(value, name) => [
+              formatColones(Number(value)) + ` (${((Number(value) / total) * 100).toFixed(1)}%)`,
+              name,
+            ]}
           />
-          <Legend />
+          <Legend
+            formatter={(value) =>
+              value.length > 22 ? value.slice(0, 20) + '…' : value
+            }
+            wrapperStyle={{ fontSize: 12 }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
